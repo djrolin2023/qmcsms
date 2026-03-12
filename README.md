@@ -20,7 +20,7 @@
 
 **乾明学生管理系统** (Qianming Campus Student Management System, 简称QMCSMS) 是一个基于Flask框架开发的现代化学生信息管理平台，为学校、教育机构提供全面的学生管理解决方案。
 
-### 🎯 核心功能
+### 🎯 核心功能模块
 
 - **学生信息管理** - 学生档案、班级分配、基本信息维护
 - **成绩管理系统** - 多科目成绩录入、统计分析、权限控制
@@ -28,22 +28,42 @@
 - **奖惩管理** - 奖励与惩罚记录、行为分析
 - **通知系统** - 系统公告、个人消息、邮件通知
 - **权限管理** - 多角色权限控制、数据权限隔离
+- **帮助中心** - 完整的在线帮助文档系统
 
-### ✨ 新增功能特性
+### ✨ 核心功能特性
 
-#### 1. 科目类别管理系统
+#### 1. 智能ID编码系统
+- **动态ID生成**：基于用户角色和状态自动生成显示ID
+- **角色变更支持**：班主任变科目老师、内宿生变外宿生时ID自动更新
+- **编码规则**：
+  - 管理员：1开头
+  - 教师：班主任21、科目老师22、代课老师23
+  - 查看员：3开头
+  - 学生：内宿生41、外宿生42
+
+#### 2. 多方式登录认证
+- **5种登录方式**：账号名、ID、手机号、身份证号、邮箱
+- **智能识别**：自动识别输入类型，提供实时提示
+- **统一认证**：使用`LoginService`统一处理所有登录方式
+
+#### 3. 科目类别管理系统
 - 支持12种标准科目分类（语文、数学、英语、物理、化学、生物、政治、历史、地理、体育、音乐、美术）
 - 科目代码规范化管理，支持科目类别筛选
 
-#### 2. 教师权限细化体系
+#### 4. 教师权限细化体系
 - **班主任**：分管班级所有学生信息和成绩的全面管理权限
 - **科目老师**：仅限任教科目成绩的管理权限，可查看学生基本信息
 - **代课老师**：与科目老师相同权限，支持临时代课管理
 
-#### 3. 基于科目的成绩权限控制
+#### 5. 基于科目的成绩权限控制
 - 双重权限验证（班级权限 + 科目权限）
 - 动态数据过滤，确保数据安全
 - 灵活的权限分配机制
+
+#### 6. 完整的通知服务
+- **多平台通知**：企业微信、爱语飞飞、Server酱、邮箱、钉钉、飞书
+- **自动提醒**：请假、成绩变动、考勤异常、奖惩记录、系统告警
+- **自定义配置**：用户可配置通知方式和内容
 
 ---
 
@@ -73,7 +93,7 @@
 2. **获取项目文件**
    ```bash
    # 方式1：从Git仓库下载
-   git clone https://github.com/your-repo/QMCSMS.git
+   git clone https://github.com/djrolin2023/qmcsms/QMCSMS.git
    
    # 方式2：下载压缩包并解压到指定目录
    # 建议目录：D:\QMCSMS 或 C:\Program Files\QMCSMS
@@ -102,6 +122,9 @@
    
    # 如果需要进行数据迁移
    python migrate_user_roles.py
+   
+   # 如果需要完全重建数据库（解决表结构问题）
+   python clean_recreate_db.py
    ```
 
 5. **启动系统**
@@ -151,6 +174,48 @@ netsh advfirewall firewall add rule name="QMCSMS" dir=in action=allow protocol=T
 
 # 查看防火墙规则
 netsh advfirewall firewall show rule name="QMCSMS"
+
+# 删除防火墙规则（如需重新配置）
+netsh advfirewall firewall delete rule name="QMCSMS"
+```
+
+#### Windows性能优化配置
+
+1. **应用池配置**（如果使用IIS）
+```xml
+<!-- 在web.config中添加 -->
+<system.webServer>
+  <aspNetCore processPath=".\venv\Scripts\python.exe" 
+              arguments="app.py" 
+              stdoutLogEnabled="true" 
+              stdoutLogFile=".\logs\stdout" 
+              hostingModel="OutOfProcess">
+    <environmentVariables>
+      <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
+    </environmentVariables>
+  </aspNetCore>
+</system.webServer>
+```
+
+2. **注册表优化**（可选）
+```reg
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters]
+"TcpTimedWaitDelay"=dword:0000001e
+"MaxUserPort"=dword:0000fffe
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\HTTP\Parameters]
+"MaxConnections"=dword:00000100
+```
+
+3. **Windows事件日志配置**
+```powershell
+# 创建自定义事件日志源
+New-EventLog -LogName "Application" -Source "QMCSMS"
+
+# 设置日志轮转策略
+wevtutil sl Application /ms:10485760
 ```
 
 ---
@@ -204,7 +269,7 @@ netsh advfirewall firewall show rule name="QMCSMS"
    cd /opt/qmcsms
    
    # 下载项目文件（示例：使用git）
-   sudo -u qmcsms git clone https://github.com/your-repo/QMCSMS.git .
+   sudo -u qmcsms git clone https://github.com/djrolin2023/qmcsms/QMCSMS.git .
    
    # 或者手动复制文件到目录
    # sudo cp -r /path/to/qmcsms/* /opt/qmcsms/
@@ -390,40 +455,34 @@ netsh advfirewall firewall show rule name="QMCSMS"
 
 #### HarmonyOS 部署
 
-**注意**: HarmonyOS部署需要特殊的环境配置
+**注意**: HarmonyOS主要用于移动设备，服务器部署建议使用openEuler或标准Linux发行版。如需要在HarmonyOS环境部署，建议采用以下方案：
 
-1. **环境准备**
-   ```bash
-   # HarmonyOS 2.0+ 通常基于AOSP环境
-   # 需要确保Python环境可用
-   
-   # 安装必要的包管理器
-   curl -sSL https://install.python-poetry.org | python3 -
-   
-   # 或者使用系统包管理器
-   hpm install python3
-   ```
-
-2. **HarmonyOS特定配置**
-   ```bash
-   # 配置HarmonyOS权限
-   hdc shell app install -p /opt/qmcsms
-   
-   # 设置网络权限
-   hdc shell aa grant com.qmcsms android.permission.INTERNET
-   ```
-
-3. **容器化部署（推荐）**
+1. **容器化部署（推荐）**
    ```dockerfile
-   # 使用Docker容器部署
-   FROM harmonyos/python:3.8
+   # 使用标准Python镜像，确保兼容性
+   FROM python:3.8-slim
    
    WORKDIR /app
    COPY . .
-   RUN pip install -r requirements.txt
+   RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
    
    EXPOSE 8081
    CMD ["python", "app.py"]
+   ```
+
+2. **兼容性配置**
+   ```bash
+   # 在HarmonyOS环境下，确保使用兼容的Python版本
+   # 建议使用Python 3.8+的稳定版本
+   
+   # 检查系统架构
+   uname -m
+   
+   # 如果是ARM架构，可能需要特定依赖
+   if [ "$(uname -m)" = "aarch64" ]; then
+       # ARM64架构特定配置
+       pip install --no-binary :all: cryptography
+   fi
    ```
 
 ---
@@ -460,6 +519,75 @@ netsh advfirewall firewall show rule name="QMCSMS"
    # 配置应用沙箱
    sudo apparmor_parser -r /etc/apparmor.d/qmcsms
    ```
+
+#### Linux性能优化配置
+
+1. **系统内核参数优化**
+```bash
+# 编辑sysctl配置
+sudo nano /etc/sysctl.conf
+
+# 添加以下参数
+net.core.somaxconn = 65535
+net.core.netdev_max_backlog = 65536
+net.ipv4.tcp_max_syn_backlog = 65536
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 30
+
+# 应用配置
+sudo sysctl -p
+```
+
+2. **文件描述符限制优化**
+```bash
+# 编辑limits.conf
+sudo nano /etc/security/limits.conf
+
+# 添加以下配置
+qmcsms soft nofile 65536
+qmcsms hard nofile 65536
+* soft nofile 65536
+* hard nofile 65536
+
+# 重新登录或重启生效
+```
+
+3. **Nginx性能优化**
+```nginx
+# 在Nginx配置中添加
+worker_processes auto;
+worker_rlimit_nofile 65535;
+
+events {
+    worker_connections 65535;
+    use epoll;
+    multi_accept on;
+}
+
+# 应用配置优化
+http {
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    keepalive_requests 1000;
+}
+```
+
+4. **应用层优化配置**
+```python
+# 在app.py中添加性能配置
+import os
+from werkzeug.middleware.profiler import ProfilerMiddleware
+
+# 生产环境配置
+if os.environ.get('FLASK_ENV') == 'production':
+    # 启用性能分析（可选）
+    app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[30])
+    
+    # 优化线程配置
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB文件上传限制
+```
 
 ---
 
@@ -539,6 +667,98 @@ netsh advfirewall firewall show rule name="QMCSMS"
    sudo -u qmcsms /opt/qmcsms/venv/bin/pip cache purge
    ```
 
+#### 高级监控和日志管理
+
+1. **日志轮转配置**
+```bash
+# 创建日志轮转配置
+sudo nano /etc/logrotate.d/qmcsms
+
+# 配置内容
+/opt/qmcsms/logs/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+}
+
+# 手动测试日志轮转
+sudo logrotate -vf /etc/logrotate.d/qmcsms
+```
+
+2. **系统监控脚本**
+```bash
+#!/bin/bash
+# qmcsms-monitor.sh - 系统健康检查脚本
+
+# 检查服务状态
+if ! systemctl is-active --quiet qmcsms; then
+    echo "QMCSMS服务未运行，尝试重启..."
+    sudo systemctl restart qmcsms
+    sleep 5
+    
+    if systemctl is-active --quiet qmcsms; then
+        echo "服务重启成功"
+    else
+        echo "服务重启失败，请检查日志"
+        # 发送告警通知
+        echo "QMCSMS服务异常" | mail -s "系统告警" admin@example.com
+    fi
+fi
+
+# 检查端口监听
+if ! netstat -tln | grep -q 8081; then
+    echo "端口8081未监听，服务可能异常"
+fi
+
+# 检查磁盘空间
+DISK_USAGE=$(df /opt/qmcsms | awk 'NR==2 {print $5}' | sed 's/%//')
+if [ $DISK_USAGE -gt 80 ]; then
+    echo "磁盘空间使用率超过80%，请及时清理"
+fi
+
+echo "系统健康检查完成"
+```
+
+3. **自动化备份脚本**
+```bash
+#!/bin/bash
+# qmcsms-backup.sh - 数据库备份脚本
+
+BACKUP_DIR="/opt/qmcsms/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+# 创建备份目录
+mkdir -p $BACKUP_DIR
+
+# 备份数据库
+cp /opt/qmcsms/qmcsms.db $BACKUP_DIR/qmcsms_$DATE.db
+
+# 备份配置文件
+tar -czf $BACKUP_DIR/config_$DATE.tar.gz /opt/qmcsms/*.py /opt/qmcsms/templates/ /opt/qmcsms/static/
+
+# 保留最近7天的备份
+find $BACKUP_DIR -name "*.db" -mtime +7 -delete
+find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
+
+echo "备份完成: $BACKUP_DIR"
+```
+
+4. **性能监控配置**
+```bash
+# 安装系统监控工具
+sudo apt install -y htop iotop iftop nethogs
+
+# 实时监控命令
+htop                    # 进程监控
+iotop                  # I/O监控
+iftop                  # 网络流量监控
+nethogs               # 进程网络流量监控
+```
+
 ---
 
 ## 🖥️ 硬件配置推荐
@@ -590,16 +810,128 @@ netsh advfirewall firewall show rule name="QMCSMS"
 ## 🔧 系统维护
 
 ### 日常维护
-- 定期备份数据库
-- 监控系统日志
-- 更新安全补丁
-- 清理临时文件
+- **数据库备份**: 每日自动备份数据库文件
+- **日志监控**: 实时监控系统日志，设置告警阈值
+- **安全更新**: 定期更新系统安全补丁和依赖包
+- **临时文件清理**: 每周清理临时文件和缓存
+- **性能监控**: 监控系统资源使用情况，及时扩容
+
+### 系统测试工具
+系统提供以下测试工具用于验证系统完整性：
+
+```bash
+# 检查模板语法
+python check_templates.py
+
+# 测试应用程序完整性
+python test_app.py
+
+# 清理并重建数据库
+python clean_recreate_db.py
+
+# 检查Python依赖
+pip list
+```
+
+### 安全配置
+
+1. **SSL/TLS配置**（生产环境必须）
+```nginx
+# Nginx SSL配置示例
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+    
+    ssl_certificate /etc/ssl/certs/qmcsms.crt;
+    ssl_certificate_key /etc/ssl/private/qmcsms.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
+    
+    # HSTS安全头
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+}
+```
+
+2. **应用安全配置**
+```python
+# 在app.py中添加安全配置
+app.config.update(
+    SESSION_COOKIE_SECURE=True,      # 仅HTTPS传输
+    SESSION_COOKIE_HTTPONLY=True,    # 防止XSS
+    SESSION_COOKIE_SAMESITE='Lax',   # CSRF防护
+    PERMANENT_SESSION_LIFETIME=3600  # 会话超时1小时
+)
+```
+
+3. **防火墙和安全组配置**
+```bash
+# 仅开放必要端口
+sudo ufw allow 22    # SSH
+sudo ufw allow 80     # HTTP (重定向到HTTPS)
+sudo ufw allow 443    # HTTPS
+sudo ufw enable
+
+# 或者使用iptables
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -j DROP
+```
 
 ### 性能优化建议
-- 定期清理日志文件
-- 优化数据库索引
-- 使用CDN加速静态资源
-- 配置Redis缓存（可选）
+- **日志轮转**: 配置日志文件自动轮转，避免磁盘占满
+- **数据库优化**: 定期优化数据库索引和清理碎片
+- **CDN加速**: 使用CDN加速静态资源加载
+- **Redis缓存**: 配置Redis缓存提升系统性能（可选）
+- **负载均衡**: 高并发场景下配置负载均衡
+
+### 更新管理
+
+1. **依赖包更新**
+```bash
+# 检查可用更新
+/opt/qmcsms/venv/bin/pip list --outdated
+
+# 安全更新（仅更新有安全漏洞的包）
+/opt/qmcsms/venv/bin/pip install --upgrade package-name
+
+# 全量更新（谨慎使用）
+/opt/qmcsms/venv/bin/pip install --upgrade -r requirements.txt
+```
+
+2. **系统版本更新流程**
+```bash
+# 1. 备份当前版本
+cp -r /opt/qmcsms /opt/qmcsms_backup_$(date +%Y%m%d)
+
+# 2. 停止服务
+sudo systemctl stop qmcsms
+
+# 3. 更新代码（如使用Git）
+cd /opt/qmcsms
+sudo -u qmcsms git pull
+
+# 4. 更新依赖
+sudo -u qmcsms /opt/qmcsms/venv/bin/pip install -r requirements.txt
+
+# 5. 数据库迁移（如有）
+sudo -u qmcsms /opt/qmcsms/venv/bin/python migrate_user_roles.py
+
+# 6. 启动服务
+sudo systemctl start qmcsms
+
+# 7. 验证更新
+curl -I https://your-domain.com
+```
+
+3. **回滚流程**
+```bash
+# 如果更新失败，快速回滚
+sudo systemctl stop qmcsms
+rm -rf /opt/qmcsms
+cp -r /opt/qmcsms_backup_$(date +%Y%m%d) /opt/qmcsms
+sudo systemctl start qmcsms
+```
 
 ---
 
@@ -618,11 +950,20 @@ netsh advfirewall firewall show rule name="QMCSMS"
 
 ## 📄 版本信息
 
-- **当前版本**: v2.0.0
+- **当前版本**: v3.1.0
 - **发布日期**: 2025年3月
-- **更新内容**: 新增科目管理系统、教师权限细化、成绩权限控制
+- **更新内容**: 
+  - 新增智能ID编码系统，支持角色变更动态更新
+  - 支持5种登录方式（账号名、ID、手机号、身份证号、邮箱）
+  - 完善教师权限细化体系
+  - 增强通知服务，支持多平台通知
+  - 优化系统性能和用户体验
+  - **新增成绩评分标准系统**：支持传统的1-100分、A+-E评分、优良中差评分三种标准
+  - **新增学生评价功能**：基于成绩、奖惩、考勤等数据自动生成评价，支持手动修改
+  - **新增奖状打印功能**：支持自定义奖状模板，批量生成和打印奖状
+  - **新增帮助文档系统**：完善的使用手册、开发手册、API文档
 - **兼容性**: 支持Python 3.8+
 
 ---
 
-*本系统为教育机构专用，未经授权不得用于商业用途。*
+*本系统为教育机构专用，未经授权不得用于商业用途.*
