@@ -269,7 +269,7 @@ wevtutil sl Application /ms:10485760
    cd /opt/qmcsms
    
    # 下载项目文件（示例：使用git）
-   sudo -u qmcsms git clone https://github.com/djrolin2023/qmcsms/QMCSMS.git .
+   sudo -u qmcsms git clone https://github.com/djrolin2023/QMCSMS.git .
    
    # 或者手动复制文件到目录
    # sudo cp -r /path/to/qmcsms/* /opt/qmcsms/
